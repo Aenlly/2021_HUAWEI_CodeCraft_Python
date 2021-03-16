@@ -6,13 +6,14 @@ vm_dict = dict()  # 虚拟机
 op_add_dict = dict()  # 添加操作
 op_del_dict = dict()  # 删除操作
 
-is_AB = 'A'
-
 op_start_server = dict()  # 虚拟机编号=（服务器编号，虚拟机名称，服务器名称，节点，是否双节点）
 day_op_start_server = dict()  # 当天的部署虚拟机操作
 
 max_server_CPU = list()  # CPU最大的服务器
 one_max_server_CPU=list()
+
+max_server_RAM = list()  # RAM最大的服务器
+one_max_server_RAM=list()
 
 server_id = -1
 
@@ -33,11 +34,6 @@ day_dela_server_dict = dict()  # 以往的扩容的服务器
 del_op_dict = dict()  # 保存删除的服务器天数与编号
 del_op_dict[0] = dict()
 del_op_dict[1] = dict()
-
-count=0
-
-is_b = 0
-
 
 def main():
     # to read standard input
@@ -62,6 +58,8 @@ def opfile():
     global op_del_dict
     global max_server_CPU
     global one_max_server_CPU
+    global max_server_RAM
+    global one_max_server_RAM
     global day_op_start_server  # 每天的操作集
     global day_dela_server_dict  # 当天扩容的服务器
     global dela_server_dict  # 购买的服务器
@@ -98,6 +96,9 @@ def opfile():
     one_max_server_CPU= [max_server_CPU[0],[max_server_CPU[1][0]//2-1,max_server_CPU[1][1]//2-1,max_server_CPU[1][2],
                                             max_server_CPU[1][3],max_server_CPU[1][0]//2-1,max_server_CPU[1][1]//2-1]]
 
+    max_server_RAM = max_RAM_List(server_dict)
+    one_max_server_RAM= [max_server_RAM[0],[max_server_RAM[1][0]//2-1,max_server_RAM[1][1]//2-1,max_server_RAM[1][2],
+                                            max_server_RAM[1][3],max_server_RAM[1][0]//2-1,max_server_RAM[1][1]//2-1]]
 
     # M = file.readline()  # 代表虚拟机的配置
     M = input()
@@ -111,6 +112,8 @@ def opfile():
         vm_dict[vm[0].strip('(').split()[0]] = vm_list
     # print(vm_dict)
 
+    # T=5
+    # s=int(file.readline())  # 天数
     # T = int(file.readline())  # 天数
     T = input()
     sys.stdout.flush()
@@ -153,30 +156,6 @@ def opfile():
     out_str(T)
 
 
-# CPU大于RAM
-def max_CPU_List(server_dict):
-    server_CPU_dict = dict()
-    for i in server_dict.keys():
-        for j in server_dict[i].keys():
-            if server_dict[i][j][0] - server_dict[i][j][1] < 150 and server_dict[i][j][0] - server_dict[i][j][1] > 50:
-                server_CPU_dict[j] = server_dict[i][j]
-    return max_CPU(server_CPU_dict)
-
-
-def max_CPU(server_CPU_dict):
-    keys = list()
-    max_id = ''
-    for i in server_CPU_dict.keys():
-        keys.append(i)
-        for j in server_CPU_dict.keys():
-            if j not in keys:
-                if server_CPU_dict[i][0] > server_CPU_dict[j][0]:
-                    max_id = i
-                if server_CPU_dict[i][0] < server_CPU_dict[j][0]:
-                    max_id = j
-    return [max_id, server_CPU_dict[max_id]]
-
-
 # 服务器列表，虚拟机列表，操作数列表，当前天数，操作数
 def op_add(op_add_dict, op, T):
     CPU = int(vm_dict[op_add_dict[op][1]][0])
@@ -188,9 +167,6 @@ def op_add(op_add_dict, op, T):
 
 
 def dep_server_vm_one(op_dict, op, CPU, RAM, T):
-    global is_AB
-    global is_b
-    is_AB='A'
     if len(del_op_dict[0].keys()) != 0:
         for day_id in del_op_dict[0].keys():
             if day_id == T:
@@ -199,13 +175,11 @@ def dep_server_vm_one(op_dict, op, CPU, RAM, T):
                     server_RAM = int(day_dela_server_dict[day_id][keys][1][1])
                     server_CPU_B = int(day_dela_server_dict[day_id][keys][1][4])
                     server_RAM_B = int(day_dela_server_dict[day_id][keys][1][5])
-                    is_AB='A'
                     if server_CPU>CPU  and server_RAM > RAM:
-                        dep_CPU_ARM_key_old(op_dict, op, is_AB, keys, 0, CPU, RAM)
+                        dep_CPU_ARM_key_old(op_dict, op, 'A', keys, 0, CPU, RAM)
                         return
-                    is_AB='B'
                     if server_CPU_B>CPU  and server_RAM_B > RAM:
-                        dep_CPU_ARM_key_old(op_dict, op, is_AB, keys, 0, CPU, RAM)
+                        dep_CPU_ARM_key_old(op_dict, op, 'B', keys, 0, CPU, RAM)
                         return
             else:
                 for keys in del_op_dict[0][day_id].keys():
@@ -213,13 +187,11 @@ def dep_server_vm_one(op_dict, op, CPU, RAM, T):
                     server_RAM = int(day_dela_server_dict[day_id][keys][1][1])
                     server_CPU_B = int(day_dela_server_dict[day_id][keys][1][4])
                     server_RAM_B = int(day_dela_server_dict[day_id][keys][1][5])
-                    is_AB='A'
                     if server_CPU>CPU  and server_RAM > RAM:
-                        dep_CPU_day_key(op_dict, op, is_AB, day_id, keys, 0, CPU, RAM)
+                        dep_CPU_day_key(op_dict, op, 'A', day_id, keys, 0, CPU, RAM)
                         return
-                    is_AB='B'
                     if server_CPU_B>CPU  and server_RAM_B > RAM:
-                        dep_CPU_day_key(op_dict, op, is_AB, day_id, keys, 0, CPU, RAM)
+                        dep_CPU_day_key(op_dict, op, 'B', day_id, keys, 0, CPU, RAM)
                         return
     if one_new_dela_id != -1:
         server_CPU = int(dela_server_dict[one_new_dela_id][1][0])
@@ -227,46 +199,27 @@ def dep_server_vm_one(op_dict, op, CPU, RAM, T):
 
         server_CPU_B = int(dela_server_dict[one_new_dela_id][1][4])
         server_RAM_B = int(dela_server_dict[one_new_dela_id][1][5])
-        if one_new_dela_id==21:
-            s=0
-        is_AB='A'
         if server_CPU>CPU  and server_RAM > RAM:
-            dep_CPU_ARM_key_old(op_dict, op, is_AB, one_new_dela_id, 0, CPU, RAM)
+            dep_CPU_ARM_key_old(op_dict, op, 'A', one_new_dela_id, 0, CPU, RAM)
             return
-        is_AB='B'
         if server_CPU_B>CPU  and server_RAM_B > RAM:#购买服务器时，重置count=1以便能使用一次b
-            dep_CPU_ARM_key_old(op_dict, op, is_AB, one_new_dela_id, 0, CPU, RAM)
+            dep_CPU_ARM_key_old(op_dict, op, 'B', one_new_dela_id, 0, CPU, RAM)
             return
-        # is_AB = 'B'
-        # if is_b==1:
-        #     # server_CPU - CPU > 20 and server_RAM - RAM > 20 and is_AB == 'B'
-        #     dep_CPU_ARM_key_old(op_dict, op, is_AB, one_new_dela_id, vm_dict[op_dict[op][1]][2], CPU, RAM)
-        #     return
-        # is_AB = 'A'
     elif one_day_dela_id != -1:
         server_CPU = int(day_dela_server_dict[one_day_dela_id][one_dela_id][1][0])
         server_RAM = int(day_dela_server_dict[one_day_dela_id][one_dela_id][1][1])
         server_CPU_B = int(day_dela_server_dict[one_day_dela_id][one_dela_id][1][4])
         server_RAM_B = int(day_dela_server_dict[one_day_dela_id][one_dela_id][1][5])
-        is_AB='A'
         if server_CPU>CPU  and server_RAM > RAM:
-            dep_CPU_day_key(op_dict, op, is_AB, one_day_dela_id, one_dela_id, 0, CPU, RAM)
+            dep_CPU_day_key(op_dict, op, 'A', one_day_dela_id, one_dela_id, 0, CPU, RAM)
             return
-        is_AB='B'
         if  server_CPU_B> CPU  and server_RAM_B > RAM:
-            dep_CPU_day_key(op_dict, op, is_AB, one_day_dela_id,one_dela_id, 0, CPU, RAM)
+            dep_CPU_day_key(op_dict, op, 'B', one_day_dela_id,one_dela_id, 0, CPU, RAM)
             return
-
-        # is_AB = 'B'
-        # if is_b==1:
-        #     # server_CPU - CPU > 20 and server_RAM - RAM > 20 and is_AB == 'B'
-        #     dep_CPU_day_key(op_dict, op, is_AB, one_day_dela_id, one_dela_id, vm_dict[op_dict[op][1]][2], CPU, RAM)
-        #     is_b=0
-        #     return
-        # is_AB = 'A'
-    is_AB='A'
-    is_b=0
-    dep_CPU_key(op_dict, op, is_AB, 0, CPU, RAM)
+    if CPU>RAM:
+        dep_CPU_key(op_dict, op, 'A', 0, CPU, RAM,one_max_server_CPU,'CPU')
+    else:
+        dep_CPU_key(op_dict, op, 'A', 0, CPU, RAM,one_max_server_RAM,'RAM')
 
 
 def dep_server_vm_two(op_dict, op, CPU, RAM, T):
@@ -289,50 +242,49 @@ def dep_server_vm_two(op_dict, op, CPU, RAM, T):
     if two_new_dela_id != -1:  # 当天的服务器编号不等于-1
         server_CPU = int(dela_server_dict[two_new_dela_id][1][0])
         server_RAM = int(dela_server_dict[two_new_dela_id][1][1])
-        if server_CPU - CPU > 0 and server_RAM - RAM > 0:
+        if server_CPU - CPU > 1 and server_RAM - RAM > 1:
             dep_CPU_ARM_key_old(op_dict, op, 'AB', two_new_dela_id, vm_dict[op_dict[op][1]][2], CPU, RAM)
             return
     elif two_day_dela_id != -1:
         server_CPU = int(day_dela_server_dict[two_day_dela_id][two_dela_id][1][0])
         server_RAM = int(day_dela_server_dict[two_day_dela_id][two_dela_id][1][1])
-        if server_CPU - CPU > 0 and server_RAM - RAM > 0:
+        if server_CPU - CPU > 1 and server_RAM - RAM > 1:
             dep_CPU_day_key(op_dict, op, 'AB', two_day_dela_id, two_dela_id, vm_dict[op_dict[op][1]][2], CPU, RAM)
             return
-    dep_CPU(op_dict, op, 'AB', '', '', 1, CPU, RAM)
+    if CPU>RAM:
+        dep_CPU_key(op_dict, op, 'AB', 1, CPU, RAM,max_server_CPU,'CPU')
+    else:
+        dep_CPU_key(op_dict, op, 'AB', 1, CPU, RAM,max_server_RAM,'RAM')
 
 
-def dep_CPU(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RAM):
-    if day_keys == '' and old_server_id == '':  # 请求新服务器
-        dep_CPU_key(op_dict, op, type, one_two, CPU, RAM)
-    elif day_keys == '' and old_server_id != '':  # 请求当天的服务器
-        dep_CPU_ARM_key_old(op_dict, op, type, old_server_id, one_two, CPU, RAM)
-    else:  # 请求以往的服务器
-        dep_CPU_day_key(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RAM)
+# def dep_CPU(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RAM):
+#     if day_keys == '' and old_server_id == '':  # 请求新服务器
+#         dep_CPU_key(op_dict, op, type, one_two, CPU, RAM)
+#     elif day_keys == '' and old_server_id != '':  # 请求当天的服务器
+#         dep_CPU_ARM_key_old(op_dict, op, type, old_server_id, one_two, CPU, RAM)
+#     else:  # 请求以往的服务器
+#         dep_CPU_day_key(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RAM)
 
 
 # key为空做判断，需要购买服务器
-def dep_CPU_key(op_dict, op, type, one_two, CPU, RAM):
+def dep_CPU_key(op_dict, op, type, one_two, CPU, RAM,MAX_CPU_RAM,MAX):
     global dela_server_dict  # 分配的服务器
     global dep_vm_dict  # 分配的虚拟机的服务器所剩余的内存，cpu
     global op_start_server
     global server_id
-    global maney
     global one_new_dela_id  # 单节点当天的服务器id
     global one_day_dela_id  # 当节点前一天的服务器id
 
     global two_new_dela_id  # 双节点当天的服务器id
     global two_day_dela_id  # 双节点前一天的服务器id
 
-    global is_b
-
     server_id += 1
     if one_two == 0:  # 单节点
-        dela_server_dict [server_id] = copy.deepcopy(one_max_server_CPU)
+        dela_server_dict [server_id] = copy.deepcopy(one_max_server_RAM)
         one_new_dela_id = copy.deepcopy(server_id)  # 保存服务器编号
         one_day_dela_id = -1  # 使前一天保存的服务器设置为-1判断
-        is_b = 1
     else:  # 双节点
-        dela_server_dict [server_id] = copy.deepcopy(max_server_CPU)
+        dela_server_dict [server_id] = copy.deepcopy(max_server_RAM)
         two_new_dela_id = copy.deepcopy(server_id)  # 保存服务器编号
         two_day_dela_id = -1  # 使前一天保存的服务器设置为-1判断
 
@@ -340,10 +292,9 @@ def dep_CPU_key(op_dict, op, type, one_two, CPU, RAM):
     dela_server_dict[server_id][1][1] -= RAM  # 分配的服务器内存减去请求的内存
 
     dep_vm_dict[op_dict[op][2]] = [server_id, op_dict[op][1]]  # 虚拟机id对应部署的服务器,与虚拟机
-    maney += int(max_server_CPU[1][2]) + int(max_server_CPU[1][3])
     # 服务器编号，虚拟机编号，服务器名称，部署节点，是否双节点部署
 
-    op_start_server[op_dict[op][2]] = [server_id, op_dict[op][1], dela_server_dict[server_id][0], type, one_two]
+    op_start_server[op_dict[op][2]] = [server_id, op_dict[op][1], dela_server_dict[server_id][0],type, one_two]
 
 
 # 操作指令，操作编号，操作节点，是否双节点部署，请求cpu大小，请求内存大小
@@ -360,8 +311,8 @@ def dep_CPU_ARM_key_old(op_dict, op, type, old_server_id, one_two, CPU, RAM):
         dela_server_dict[old_server_id][1][1] -= RAM  # 分配的服务器内存减去请求的内存
     dep_vm_dict[op_dict[op][2]] = [old_server_id, op_dict[op][1]]  # 虚拟机id对应部署的服务器,与虚拟机
     # 虚拟机编号=分配的服务器编号，虚拟机名称，当天分配的服务器名称，部署节点，是否双节点部署
-    op_start_server[op_dict[op][2]] = [old_server_id, op_dict[op][1], dela_server_dict[old_server_id][0], type,
-                                       one_two]
+
+    op_start_server[op_dict[op][2]] = [old_server_id, op_dict[op][1], dela_server_dict[old_server_id][0], type,one_two]
 
 
 # 操作指令，操作编号， 前一天的天数，前一天部署的服务器编号，是否双节点部署，请求的cpu大小，请求的内存大小
@@ -369,7 +320,6 @@ def dep_CPU_day_key(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RA
     global day_dela_server_dict  # 以往的所以服务器
     global dep_vm_dict  # 分配的虚拟机的服务器所剩余的内存，cpu
     global op_start_server
-
     if type=='B':
         day_dela_server_dict[day_keys][old_server_id][1][4] -= CPU  # 分配的服务器CPU减去请求的CPU
         day_dela_server_dict[day_keys][old_server_id][1][5] -= RAM  # 分配的服务器内存减去请求的内存
@@ -380,25 +330,6 @@ def dep_CPU_day_key(op_dict, op, type, day_keys, old_server_id, one_two, CPU, RA
     # 虚拟机编号=服务器编号，虚拟机名称，服务器名称，部署节点，是否双节点部署
     op_start_server[op_dict[op][2]] = [copy.deepcopy(old_server_id), op_dict[op][1], day_dela_server_dict[day_keys][
         old_server_id][0], type,one_two]
-
-
-def out_str(T):
-    for i in range(int(T)):
-        if len(day_dela_server_dict[i].keys()) == 0:
-            print('(purchase, 0)')
-        else:
-            print('(purchase, 1)')
-            print(f'({max_server_CPU[0]}, {len(day_dela_server_dict[i].keys())})')
-        print('(migration, 0)')
-        sys.stdout.flush()
-        for keys in day_op_start_server[i].keys():
-            if day_op_start_server[i][keys][4] == 1:
-                print(f'({day_op_start_server[i][keys][0]})')
-            else:
-                print(f'({day_op_start_server[i][keys][0]}, {day_op_start_server[i][keys][3]})')
-            sys.stdout.flush()
-    # print(maney)
-
 
 # 操作指令，操作编号，操作天数
 def op_del(op_dict, op, d):
@@ -453,6 +384,72 @@ def op_del(op_dict, op, d):
                         del_op_dict[one_two][server_keys][server_id] = copy.deepcopy(server_id)
                         return
                 # day_op_start_server[day_keys].pop(id)
+
+# CPU大于RAM
+def max_CPU_List(server_dict):
+    server_CPU_dict = dict()
+    for i in server_dict.keys():
+        for j in server_dict[i].keys():
+            if server_dict[i][j][0] - server_dict[i][j][1] < 150 and server_dict[i][j][0] - server_dict[i][j][1] > 50:
+                server_CPU_dict[j] = server_dict[i][j]
+    return max_CPU(server_CPU_dict)
+
+def max_CPU(server_CPU_dict):
+    keys = list()
+    max_id = ''
+    for i in server_CPU_dict.keys():
+        keys.append(i)
+        for j in server_CPU_dict.keys():
+            if j not in keys:
+                if server_CPU_dict[i][0] > server_CPU_dict[j][0]:
+                    max_id = i
+                if server_CPU_dict[i][0] < server_CPU_dict[j][0]:
+                    max_id = j
+    return [max_id, server_CPU_dict[max_id]]
+
+# CPU大于RAM
+def max_RAM_List(server_dict):
+    server_RAM_dict = dict()
+    for i in server_dict.keys():
+        for j in server_dict[i].keys():
+            if server_dict[i][j][1] - server_dict[i][j][0] < 150 and server_dict[i][j][1] - server_dict[i][j][0] > 50:
+                server_RAM_dict[j] = server_dict[i][j]
+    return max_RAM(server_RAM_dict)
+
+def max_RAM(max_RAM_List):
+    keys = list()
+    max_id = ''
+    for i in max_RAM_List.keys():
+        keys.append(i)
+        for j in max_RAM_List.keys():
+            if j not in keys:
+                if max_RAM_List[i][0] > max_RAM_List[j][0]:
+                    max_id = i
+                if max_RAM_List[i][0] < max_RAM_List[j][0]:
+                    max_id = j
+    return [max_id, max_RAM_List[max_id]]
+
+def out_str(T):
+    for i in range(int(T)):
+        count_type=dict()
+        for j in day_dela_server_dict[i].keys():
+            if day_dela_server_dict[i][j][0] not in count_type.keys():
+                count_type[day_dela_server_dict[i][j][0]]=1
+            else:
+                count_type[day_dela_server_dict[i][j][0]]+=1
+        print(f'(purchase, {len(count_type.keys())})')
+        for key in count_type.keys():
+            print(f'({key}, {count_type[key]})')
+        print('(migration, 0)')
+        sys.stdout.flush()
+        for keys in day_op_start_server[i].keys():
+            if day_op_start_server[i][keys][4] == 1:
+                print(f'({day_op_start_server[i][keys][0]})')
+            else:
+                print(f'({day_op_start_server[i][keys][0]}, {day_op_start_server[i][keys][3]})')
+            # print(day_op_start_server[i][keys])
+            sys.stdout.flush()
+    # print(maney)
 
 
 if __name__ == "__main__":
